@@ -4,47 +4,43 @@ const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const path = require('path');
 
-// Setting views dan static files dengan path absolute
-app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static('public'));
 
-let outputDevices = [];
+// Gunakan Objek agar lebih mudah dikelola berdasarkan Socket ID
+let outputDevices = {};
 
-app.get('/', (req, res) => {
-    res.render('index');
-});
-
-app.get('/output', (req, res) => {
-    res.render('output');
-});
-
-app.get('/control', (req, res) => {
-    res.render('control');
-});
+app.get('/', (req, res) => res.render('index'));
+app.get('/output', (req, res) => res.render('output'));
+app.get('/control', (req, res) => res.render('control'));
 
 io.on('connection', (socket) => {
+    console.log('Koneksi baru:', socket.id);
+
+    // Kirim list device yang ada saat ini ke siapa pun yang baru konek (terutama controller)
+    socket.emit('update-device-list', Object.values(outputDevices));
+
+    // Registrasi device sebagai output
     socket.on('register-output', (deviceName) => {
-        const device = { id: socket.id, name: deviceName };
-        outputDevices.push(device);
-        io.emit('update-device-list', outputDevices);
+        outputDevices[socket.id] = { id: socket.id, name: deviceName };
+        // Beritahu semua orang bahwa ada device baru
+        io.emit('update-device-list', Object.values(outputDevices));
+        console.log(`Device terdaftar: ${deviceName}`);
     });
 
-    socket.on('get-devices', () => {
-        socket.emit('update-device-list', outputDevices);
-    });
-
+    // Kontrol suara (Play/Pause)
     socket.on('send-command', (data) => {
         io.to(data.targetId).emit('audio-control', data.action);
     });
 
     socket.on('disconnect', () => {
-        outputDevices = outputDevices.filter(d => d.id !== socket.id);
-        io.emit('update-device-list', outputDevices);
+        if (outputDevices[socket.id]) {
+            console.log('Device keluar:', outputDevices[socket.id].name);
+            delete outputDevices[socket.id];
+            io.emit('update-device-list', Object.values(outputDevices));
+        }
     });
 });
 
 const PORT = process.env.PORT || 3000;
-http.listen(PORT, () => {
-    console.log(`Server nyala di port ${PORT}`);
-});
+http.listen(PORT, () => console.log(`Server running on port ${PORT}`));
