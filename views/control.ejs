@@ -1,47 +1,96 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Control Center</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horror Control Panel</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/socket.io/socket.io.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Space Grotesk', sans-serif; background-color: #0f1115; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
+    </style>
 </head>
-<body class="bg-[#0f0f0f] text-white p-6">
-    <h1 class="text-3xl font-bold mb-6 border-b border-gray-800 pb-4">Remote Control</h1>
-    
-    <div id="deviceList" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <!-- Card device akan muncul di sini secara otomatis -->
-    </div>
+<body class="text-zinc-200 p-6">
+
+    <header class="max-w-4xl mx-auto mb-10 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tighter text-white">CONTROL <span class="text-red-500">CENTER</span></h1>
+            <p class="text-zinc-500 text-sm">Prank Suara Horor Jarak Jauh</p>
+        </div>
+        <div id="server-status" class="flex items-center text-xs bg-zinc-900 px-3 py-1 rounded-full border border-zinc-800">
+            <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div> SERVER ONLINE
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto">
+        <h2 class="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4">Device Output Aktif</h2>
+        
+        <div id="deviceList" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Card Device akan muncul di sini secara otomatis -->
+            <div class="col-span-full py-20 text-center glass rounded-2xl border-dashed border-2 border-zinc-800">
+                <p class="text-zinc-600">Mencari device di jaringan...</p>
+            </div>
+        </div>
+    </main>
 
     <script>
         const socket = io();
         const deviceListDiv = document.getElementById('deviceList');
 
-        socket.emit('get-devices');
+        // Minta data terbaru saat terhubung
+        socket.on('connect', () => {
+            console.log("Connected to Control Server");
+        });
 
+        // Update list device secara real-time
         socket.on('update-device-list', (devices) => {
             deviceListDiv.innerHTML = '';
-            if(devices.length === 0) {
-                deviceListDiv.innerHTML = '<p class="text-gray-500">Tidak ada device output yang aktif...</p>';
-            }
             
+            if (devices.length === 0) {
+                deviceListDiv.innerHTML = `
+                    <div class="col-span-full py-20 text-center glass rounded-2xl border-dashed border-2 border-zinc-800">
+                        <p class="text-zinc-600">Tidak ada device pengeluaran suara yang aktif.</p>
+                        <p class="text-[10px] mt-2 text-zinc-700 uppercase tracking-widest">Buka link /output di HP target</p>
+                    </div>`;
+                return;
+            }
+
             devices.forEach(device => {
                 const card = document.createElement('div');
-                card.className = "bg-gray-900 p-6 rounded-xl border border-gray-700 shadow-xl";
+                card.className = "glass p-6 rounded-2xl hover:border-red-500/50 transition-all duration-300";
                 card.innerHTML = `
-                    <h3 class="font-bold text-xl mb-4 text-blue-400">${device.name}</h3>
-                    <div class="flex gap-2">
-                        <button onclick="sendCommand('${device.id}', 'play')" class="flex-1 bg-red-600 hover:bg-red-700 py-2 rounded font-bold">PLAY</button>
-                        <button onclick="sendCommand('${device.id}', 'pause')" class="flex-1 bg-gray-700 hover:bg-gray-800 py-2 rounded font-bold">STOP</button>
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <p class="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Device ID</p>
+                            <h3 class="font-bold text-white tracking-tight">${device.name}</h3>
+                        </div>
+                        <span class="bg-green-500/10 text-green-500 text-[10px] px-2 py-1 rounded border border-green-500/20 font-bold">ONLINE</span>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button onclick="sendCommand('${device.id}', 'play')" 
+                                class="flex-1 bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl font-bold transition-all active:scale-95 shadow-lg shadow-red-900/20">
+                            MULAI SUARA
+                        </button>
+                        <button onclick="sendCommand('${device.id}', 'pause')" 
+                                class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white py-3 rounded-xl font-bold transition-all active:scale-95">
+                            STOP
+                        </button>
                     </div>
                 `;
                 deviceListDiv.appendChild(card);
             });
         });
 
-        function sendCommand(id, action) {
-            socket.emit('send-command', { targetId: id, action: action });
+        function sendCommand(targetId, action) {
+            socket.emit('send-command', { targetId, action });
         }
+
+        socket.on('disconnect', () => {
+            document.getElementById('server-status').innerHTML = '<div class="w-2 h-2 bg-red-500 rounded-full mr-2"></div> OFFLINE';
+        });
     </script>
 </body>
 </html>
