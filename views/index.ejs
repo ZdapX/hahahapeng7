@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horror Remote</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #0a0a0a; color: white; font-family: 'Inter', sans-serif; }
+        .horror-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+    <div class="text-center">
+        <h1 class="text-4xl font-bold mb-8 text-red-600 tracking-widest">HORROR PRANK</h1>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <a href="/output" class="horror-card p-8 rounded-2xl hover:bg-red-900 transition duration-300 block">
+                <h2 class="text-2xl font-bold">DEVICE OUTPUT</h2>
+                <p class="text-gray-400 mt-2 text-sm">Device ini yang akan mengeluarkan suara</p>
+            </a>
+            <a href="/control" class="horror-card p-8 rounded-2xl hover:bg-blue-900 transition duration-300 block">
+                <h2 class="text-2xl font-bold">DEVICE CONTROL</h2>
+                <p class="text-gray-400 mt-2 text-sm">Gunakan ini untuk kontrol suara jarak jauh</p>
+            </a>
+        </div>
+    </div>
+</body>
+</html>
