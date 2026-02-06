@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Control Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="bg-[#0f0f0f] text-white p-6">
+    <h1 class="text-3xl font-bold mb-6 border-b border-gray-800 pb-4">Remote Control</h1>
+    
+    <div id="deviceList" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Card device akan muncul di sini secara otomatis -->
+    </div>
+
+    <script>
+        const socket = io();
+        const deviceListDiv = document.getElementById('deviceList');
+
+        socket.emit('get-devices');
+
+        socket.on('update-device-list', (devices) => {
+            deviceListDiv.innerHTML = '';
+            if(devices.length === 0) {
+                deviceListDiv.innerHTML = '<p class="text-gray-500">Tidak ada device output yang aktif...</p>';
+            }
+            
+            devices.forEach(device => {
+                const card = document.createElement('div');
+                card.className = "bg-gray-900 p-6 rounded-xl border border-gray-700 shadow-xl";
+                card.innerHTML = `
+                    <h3 class="font-bold text-xl mb-4 text-blue-400">${device.name}</h3>
+                    <div class="flex gap-2">
+                        <button onclick="sendCommand('${device.id}', 'play')" class="flex-1 bg-red-600 hover:bg-red-700 py-2 rounded font-bold">PLAY</button>
+                        <button onclick="sendCommand('${device.id}', 'pause')" class="flex-1 bg-gray-700 hover:bg-gray-800 py-2 rounded font-bold">STOP</button>
+                    </div>
+                `;
+                deviceListDiv.appendChild(card);
+            });
+        });
+
+        function sendCommand(id, action) {
+            socket.emit('send-command', { targetId: id, action: action });
+        }
+    </script>
+</body>
+</html>
