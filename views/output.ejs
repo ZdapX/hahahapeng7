@@ -1,46 +1,29 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Output Device</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="/socket.io/socket.io.js"></script>
-</head>
-<body class="bg-black text-white flex flex-col items-center justify-center min-h-screen text-center">
-    <div id="status" class="mb-4 text-red-500 animate-pulse">Menunggu Instruksi...</div>
-    <p class="text-gray-500 italic">Pastikan volume penuh dan layar jangan mati</p>
-    
-    <!-- Audio File -->
-    <audio id="horrorAudio" src="/audio/horror.mp3" preload="auto"></audio>
+<script>
+    const socket = io();
+    const audio = document.getElementById('horrorAudio');
+    const statusDiv = document.getElementById('status');
+    const deviceName = "HP_Target_" + Math.floor(Math.random() * 999);
 
-    <script>
-        const socket = io();
-        const audio = document.getElementById('horrorAudio');
-        const statusDiv = document.getElementById('status');
+    // LANGSUNG DAFTAR SAAT KONEK (Tanpa nunggu klik)
+    socket.emit('register-output', deviceName);
 
-        // Berikan nama random atau minta prompt
-        const deviceName = "Device_" + Math.floor(Math.random() * 1000);
-        
-        // Aktifkan Audio Browser Policy (Harus ada interaksi user sekali)
-        window.onclick = () => {
-            audio.play().then(() => {
-                audio.pause();
-                statusDiv.innerText = "Device Siap! (Connected)";
-                statusDiv.classList.remove('text-red-500');
-                statusDiv.classList.add('text-green-500');
-            });
-            socket.emit('register-output', deviceName);
-        };
+    window.onclick = () => {
+        // Hanya untuk mengaktifkan izin audio browser
+        audio.play().then(() => {
+            audio.pause();
+            statusDiv.innerText = "Sinyal Aktif & Siap Menerima Perintah";
+            statusDiv.className = "text-green-500 font-bold";
+        }).catch(e => console.log("Audio belum aktif"));
+    };
 
-        socket.on('audio-control', (action) => {
-            if (action === 'play') {
-                audio.play();
-                statusDiv.innerText = "SUARA SEDANG BERMAIN!";
-            } else {
-                audio.pause();
-                statusDiv.innerText = "Device Siap! (Paused)";
-            }
-        });
-    </script>
-</body>
-</html>
+    socket.on('audio-control', (action) => {
+        if (action === 'play') {
+            audio.currentTime = 0; // Mulai dari awal
+            audio.play();
+            statusDiv.innerText = "⚠️ SUARA SEDANG BERMAIN ⚠️";
+        } else {
+            audio.pause();
+            statusDiv.innerText = "Suara Berhenti";
+        }
+    });
+</script>
