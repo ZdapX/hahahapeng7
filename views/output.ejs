@@ -1,29 +1,85 @@
-<script>
-    const socket = io();
-    const audio = document.getElementById('horrorAudio');
-    const statusDiv = document.getElementById('status');
-    const deviceName = "HP_Target_" + Math.floor(Math.random() * 999);
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Siaga</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { background-color: #050505; cursor: none; }
+        .pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen overflow-hidden">
+    
+    <div id="setup-overlay" class="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center text-center p-6 transition-opacity duration-500">
+        <div class="w-16 h-16 border-4 border-red-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <h2 class="text-red-600 text-xl font-mono tracking-tighter mb-2">MENGHUBUNGKAN KE SERVER...</h2>
+        <button onclick="startDevice()" id="btn-start" class="hidden mt-4 px-8 py-3 bg-red-700 text-white font-bold rounded-full hover:bg-red-600 transition-all">
+            AKTIFKAN DEVICE
+        </button>
+    </div>
 
-    // LANGSUNG DAFTAR SAAT KONEK (Tanpa nunggu klik)
-    socket.emit('register-output', deviceName);
+    <div class="text-center">
+        <div id="led" class="w-2 h-2 bg-red-900 rounded-full mx-auto mb-2"></div>
+        <p id="status-text" class="text-zinc-800 text-[10px] font-mono uppercase tracking-[0.3em]">Device Idle</p>
+    </div>
 
-    window.onclick = () => {
-        // Hanya untuk mengaktifkan izin audio browser
-        audio.play().then(() => {
-            audio.pause();
-            statusDiv.innerText = "Sinyal Aktif & Siap Menerima Perintah";
-            statusDiv.className = "text-green-500 font-bold";
-        }).catch(e => console.log("Audio belum aktif"));
-    };
+    <!-- Audio File -->
+    <audio id="horrorAudio" src="/audio/horror.mp3" preload="auto"></audio>
 
-    socket.on('audio-control', (action) => {
-        if (action === 'play') {
-            audio.currentTime = 0; // Mulai dari awal
-            audio.play();
-            statusDiv.innerText = "⚠️ SUARA SEDANG BERMAIN ⚠️";
-        } else {
-            audio.pause();
-            statusDiv.innerText = "Suara Berhenti";
+    <script>
+        const socket = io();
+        const audio = document.getElementById('horrorAudio');
+        const overlay = document.getElementById('setup-overlay');
+        const btnStart = document.getElementById('btn-start');
+        const statusText = document.getElementById('status-text');
+        const led = document.getElementById('led');
+
+        const deviceName = "Hacked_Device_" + Math.floor(Math.random() * 9999);
+
+        socket.on('connect', () => {
+            btnStart.classList.remove('hidden');
+            document.querySelector('.animate-spin').classList.add('hidden');
+        });
+
+        function startDevice() {
+            // Memancing izin browser agar audio bisa diputar otomatis nanti
+            audio.play().then(() => {
+                audio.pause();
+                overlay.style.opacity = '0';
+                setTimeout(() => overlay.style.display = 'none', 500);
+                
+                // Registrasi ke server
+                socket.emit('register-output', deviceName);
+                
+                statusText.innerText = "Device Ready";
+                led.classList.remove('bg-red-900');
+                led.classList.add('bg-red-500', 'pulse');
+            }).catch(e => {
+                alert("Klik tombol Aktifkan Device sekali lagi");
+            });
         }
-    });
-</script>
+
+        // Mendengarkan perintah dari Controller
+        socket.on('audio-control', (action) => {
+            if (action === 'play') {
+                audio.currentTime = 0; 
+                audio.play();
+                statusText.innerText = "Executing...";
+                led.classList.add('bg-red-600');
+            } else {
+                audio.pause();
+                statusText.innerText = "Device Ready";
+            }
+        });
+
+        // Jika koneksi putus, tampilkan overlay lagi
+        socket.on('disconnect', () => {
+            location.reload();
+        });
+    </script>
+</body>
+</html>
